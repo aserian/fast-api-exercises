@@ -117,3 +117,111 @@ def test_get_user_items_different_owners(test_db):
     assert all(item.owner_id == 1 for item in items)
     assert items[0].title == 'Item 1'
     assert items[1].title == 'Item 3'
+
+
+# アクティブユーザーの中で指定したユーザーIDを除外して最小IDのユーザーを取得するテスト
+def test_get_active_user_with_min_id_excluding_success(test_db):
+    exclude_user_id = 2
+    test_db.execute(
+        "INSERT INTO users (id, email, hashed_password, is_active) VALUES "
+        "(1, 'user1@example.com', 'hashed_password', True), "
+        f"({exclude_user_id}, 'user2@example.com', 'hashed_password', True), "
+        "(3, 'user3@example.com', 'hashed_password', True)"
+    )
+    test_db.commit()
+
+    user = crud.get_active_user_with_min_id_excluding(test_db, exclude_user_id=exclude_user_id)
+    assert user is not None
+    assert user.id == 1
+
+
+# アクティブユーザーの中で指定したユーザーIDを除外して最小IDのユーザーを取得するテスト（最初のユーザーを除外）
+def test_get_active_user_with_min_id_excluding_first_user(test_db):
+    exclude_user_id = 1
+    test_db.execute(
+        "INSERT INTO users (id, email, hashed_password, is_active) VALUES "
+        f"({exclude_user_id}, 'user1@example.com', 'hashed_password', True), "
+        "(2, 'user2@example.com', 'hashed_password', True), "
+        "(3, 'user3@example.com', 'hashed_password', True)"
+    )
+    test_db.commit()
+
+    user = crud.get_active_user_with_min_id_excluding(test_db, exclude_user_id=exclude_user_id)
+    assert user is not None
+    assert user.id == 2
+
+
+# アクティブユーザーの中で指定したユーザーIDを除外して最小IDのユーザーを取得するテスト（除外したユーザー以外が非アクティブ）
+def test_get_active_user_with_min_id_excluding_with_inactive(test_db):
+    exclude_user_id = 2
+    test_db.execute(
+        "INSERT INTO users (id, email, hashed_password, is_active) VALUES "
+        "(1, 'user1@example.com', 'hashed_password', False), "
+        f"({exclude_user_id}, 'user2@example.com', 'hashed_password', True), "
+        "(3, 'user3@example.com', 'hashed_password', True)"
+    )
+    test_db.commit()
+
+    user = crud.get_active_user_with_min_id_excluding(test_db, exclude_user_id=exclude_user_id)
+    assert user is not None
+    assert user.id == 3
+
+
+# アクティブユーザーの中で指定したユーザーIDを除外して最小IDのユーザーを取得するテスト（他にアクティブユーザーがいない場合）
+def test_get_active_user_with_min_id_excluding_no_other_users(test_db):
+    exclude_user_id = 1
+    test_db.execute(
+        "INSERT INTO users (id, email, hashed_password, is_active) VALUES "
+        f"({exclude_user_id}, 'user1@example.com', 'hashed_password', True)"
+    )
+    test_db.commit()
+
+    user = crud.get_active_user_with_min_id_excluding(test_db, exclude_user_id=exclude_user_id)
+    assert user is None
+
+
+# ユーザーの非アクティブ化のテスト
+def test_deactivate_user_success(test_db):
+    deactivate_user_id = 1
+    transfer_user_id = 2
+    test_db.execute(
+        "INSERT INTO users (id, email, hashed_password, is_active) VALUES "
+        f"({deactivate_user_id}, 'user1@example.com', 'hashed_password', True), "
+        f"({transfer_user_id}, 'user2@example.com', 'hashed_password', True)"
+    )
+    test_db.execute(
+        "INSERT INTO items (id, title, description, owner_id) VALUES "
+        f"(1, 'Item 1', 'Description 1', {deactivate_user_id}), "
+        f"(2, 'Item 2', 'Description 2', {deactivate_user_id})"
+    )
+    test_db.commit()
+
+    result = crud.deactivate_user(test_db, user_id=deactivate_user_id, transfer_user_id=transfer_user_id)
+    assert result is True
+
+    cursor = test_db.execute(f"SELECT is_active FROM users WHERE id = {deactivate_user_id}")
+    user_status = cursor.fetchone()
+    assert user_status[0] == 0  # False
+
+    cursor = test_db.execute("SELECT owner_id FROM items")
+    items_owners = cursor.fetchall()
+    assert all(owner[0] == 2 for owner in items_owners)
+
+
+# ユーザーの非アクティブ化でアイテムがない場合のテスト
+def test_deactivate_user_no_items(test_db):
+    deactivate_user_id = 1
+    transfer_user_id = 2
+    test_db.execute(
+        "INSERT INTO users (id, email, hashed_password, is_active) VALUES "
+        f"({deactivate_user_id}, 'user1@example.com', 'hashed_password', True), "
+        f"({transfer_user_id}, 'user2@example.com', 'hashed_password', True)"
+    )
+    test_db.commit()
+
+    result = crud.deactivate_user(test_db, user_id=deactivate_user_id, transfer_user_id=transfer_user_id)
+    assert result is True
+
+    cursor = test_db.execute(f"SELECT is_active FROM users WHERE id = {deactivate_user_id}")
+    user_status = cursor.fetchone()
+    assert user_status[0] == 0

@@ -228,3 +228,82 @@ def test_read_items_for_authenticated_user(test_db, client):
     assert len(data) == 2
     assert data[0]["title"] == "Item 2"
     assert data[1]["title"] == "Item 3"
+
+
+# ユーザー非アクティブAPIの基本機能のテスト
+def test_deactivate_user_success(test_db, client):
+    transfer_user_id = 2
+    deactivate_user_id = 4
+    # 複数のユーザーを事前に作成
+    test_db.execute(
+        "INSERT INTO users (id, email, hashed_password, is_active) VALUES "
+        "(1, 'test@example.com', 'hashed_password', False),"
+        f"({transfer_user_id}, 'test2@example.com', 'hashed_password', True),"
+        "(3, 'test3@example.com', 'hashed_password', True),"
+        f"({deactivate_user_id}, 'test4@example.com', 'hashed_password', True)"
+    )
+    # 複数のアイテムを事前に作成
+    test_db.execute(
+        "INSERT INTO items (id, title, description, owner_id) VALUES "
+        f"(1, 'Item 1', 'Description 1', {transfer_user_id}),"
+        f"(2, 'Item 2', 'Description 2', {transfer_user_id}),"
+        f"(3, 'Item 3', 'Description 3', {deactivate_user_id}),"
+        f"(4, 'Item 4', 'Description 4', {deactivate_user_id})"
+    )
+    test_db.commit()
+
+    # ユーザー4のIDを設定した際に正常に動作することを確認
+    response = client.delete(f"/users/{deactivate_user_id}")
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["detail"] == "User deactivated successfully"
+
+    # ユーザー4が非アクティブ化され、itemを一つも持っていないことを確認
+    response = client.get(f"/users/{deactivate_user_id}")
+    assert response.status_code == 200
+    deactivate_user = response.json()
+    assert deactivate_user["is_active"] is False
+    assert deactivate_user["items"] == []
+
+    # アイテムの所有権が有効化されているユーザの中で一番小さいIDのユーザに全てのアイテムが移管されたことを確認
+    response = client.get(f"/users/{transfer_user_id}")
+    assert response.status_code == 200
+    transfer_user = response.json()
+    assert len(transfer_user["items"]) == 4
+
+
+# ユーザー非アクティブAPIでユーザーが存在しない場合のテスト
+def test_deactivate_user_not_found(test_db, client):
+    response = client.delete("/users/999")
+    assert response.status_code == 404
+    data = response.json()
+    assert data["detail"] == "User not found"
+
+
+# ユーザー非アクティブAPIでユーザーが既に非アクティブのテスト
+def test_deactivate_user_inactive_user(test_db, client):
+    user_id = 1
+    test_db.execute(
+        "INSERT INTO users (id, email, hashed_password, is_active) VALUES"
+        f"({user_id}, 'test2@example.com', 'hashed_password', False)"
+    )
+    test_db.commit()
+    response = client.delete(f"/users/{user_id}")
+    assert response.status_code == 404
+    data = response.json()
+    assert data["detail"] == "User not found"
+
+
+# ユーザー非アクティブAPIで、アクティブユーザーが一人しかいない場合のテスト
+def test_deactivate_only_active_user(test_db, client):
+    user_id = 1
+    test_db.execute(
+        "INSERT INTO users (id, email, hashed_password, is_active) VALUES"
+        f"({user_id}, 'test@example.com', 'hashed_password', True)"
+    )
+    test_db.commit()
+
+    response = client.delete(f"/users/{user_id}")
+    assert response.status_code == 400
+    data = response.json()
+    assert data["detail"] == "Cannot deactivate the only active user"
