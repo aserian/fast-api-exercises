@@ -1,6 +1,7 @@
 import pytest
 from .. import crud
 
+
 # アクティブユーザー取得のテスト
 def test_get_active_user_success(test_db):
     user_id = 1

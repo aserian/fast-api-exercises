@@ -25,6 +25,7 @@ def test_verify_active_user_success(test_db):
     assert user.id == user_id
     assert user.is_active is True
 
+
 # 認証されていない場合のテスト
 def test_verify_active_user_not_authenticated(test_db):
     mock_request = Mock(spec=Request)
@@ -34,6 +35,7 @@ def test_verify_active_user_not_authenticated(test_db):
         verify_active_user(mock_request, test_db, "X-API-TOKEN")
 
     assert exc_info.value.status_code == 401
+
 
 # 非アクティブなユーザーの場合のテスト
 def test_verify_active_user_inactive_user(test_db, client):
@@ -53,6 +55,7 @@ def test_verify_active_user_inactive_user(test_db, client):
 
     assert exc_info.value.status_code == 401
     assert exc_info.value.detail == "Not authenticated"
+
 
 # 存在しないユーザーの場合のテスト
 def test_verify_active_user_nonexistent_user(test_db):

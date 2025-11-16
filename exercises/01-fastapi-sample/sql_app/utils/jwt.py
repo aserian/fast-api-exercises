@@ -14,8 +14,10 @@ def jwt_claims(user: models.User) -> Dict[str, Any]:
 
     return claim_set
 
+
 def jwt_encode(claim_set: Dict[str, Any]) -> str:
     return jwt.encode(claim_set, SECRET_KEY, algorithm=ALGORITHM)
+
 
 def jwt_decode(token: str) -> Dict[str, Any]:
     return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])

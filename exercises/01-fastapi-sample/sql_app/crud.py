@@ -31,6 +31,7 @@ def create_user(db: Session, user: schemas.UserCreate):
     db.refresh(db_user)
     return db_user
 
+
 def deactivate_user(db: Session, user_id: int, transfer_user_id: int) -> bool:
     try:
         # タスクの所有者を移管

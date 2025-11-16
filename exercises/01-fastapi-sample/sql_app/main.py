@@ -36,6 +36,7 @@ def get_db():
 db_session = Depends(get_db)
 
 
+# memo: ヘルスチェックようなので、認証は不要なためpublicルーターに追加
 @public_router.get("/health-check")
 def health_check(db: Session = db_session):
     return {"status": "ok"}

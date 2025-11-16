@@ -4,6 +4,7 @@ import pytest
 from ..dependencies.auth_dependency import verify_active_user
 from ..main import app
 
+
 def test_create_user(test_db, client):
     response = client.post(
         "/users/",
