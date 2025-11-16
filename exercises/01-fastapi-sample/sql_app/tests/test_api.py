@@ -30,7 +30,8 @@ def test_auth_endpoints_missing_token(test_db, client):
         {"method": "get", "path": "/users/"},
         {"method": "get", "path": "/users/1"},
         {"method": "post", "path": "/users/1/items/", "json": {"title": "test", "description": "test"}},
-        {"method": "get", "path": "/items/"}
+        {"method": "get", "path": "/items/"},
+        {"method": "get", "path": "/me/items/"}
     ]
 
     # 各エンドポイントの認証テスト
@@ -56,7 +57,8 @@ def test_auth_endpoints_without_token(test_db, client):
         {"method": "get", "path": "/users/"},
         {"method": "get", "path": "/users/1"},
         {"method": "post", "path": "/users/1/items/", "json": {"title": "test", "description": "test"}},
-        {"method": "get", "path": "/items/"}
+        {"method": "get", "path": "/items/"},
+        {"method": "get", "path": "/me/items/"}
     ]
 
 
@@ -83,7 +85,8 @@ def test_auth_endpoints_with_valid_token(test_db, client):
         {"method": "get", "path": "/users/"},
         {"method": "get", "path": "/users/1"},
         {"method": "post", "path": "/users/1/items/", "json": {"title": "test", "description": "test"}},
-        {"method": "get", "path": "/items/"}
+        {"method": "get", "path": "/items/"},
+        {"method": "get", "path": "/me/items/"}
     ]
 
     # 最低一人は、アクティブユーザーがいる想定なので事前に用意
@@ -187,3 +190,40 @@ def test_no_auth_endpoints_with_valid_token(test_db, client):
         else:
             response = client_method(endpoint, headers=headers)
         assert response.status_code == 200
+
+# 認証されたユーザーのアイテム取得APIのテスト
+def test_read_items_for_authenticated_user(test_db, client):
+    app.dependency_overrides.pop(verify_active_user, None)
+    # ユーザ作成をしてapiトークンを取得
+    response = client.post(
+        "/users/",
+        json={"email": "deadpool@example.com", "password": "chimichangas4life"},
+    )
+    data = response.json()
+    x_api_token = data["x_api_token"]
+
+    # 事前にアイテムを作成
+    test_db.execute(
+        "INSERT INTO items (id, title, description, owner_id) VALUES"
+        "(1, 'Item 1', 'Description 1', 1),"
+        "(2, 'Item 2', 'Description 2', 1),"
+        "(3, 'Item 3', 'Description 3', 1),"
+        "(4, 'Item 4', 'Description 4', 1)"
+    )
+    test_db.commit()
+
+    # 認証されたユーザーのアイテムを取得して全て返ることを確認
+    response = client.get("/me/items/", headers={"x-api-token": x_api_token})
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) == 4
+
+    # skip, limit パラメータの動作確認
+    response = client.get("/me/items/?skip=1&limit=2", headers={"x-api-token": x_api_token})
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) == 2
+    assert data[0]["title"] == "Item 2"
+    assert data[1]["title"] == "Item 3"
