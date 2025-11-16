@@ -4,7 +4,7 @@ from fastapi import Depends, FastAPI, APIRouter, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from . import crud, models, schemas
-from .database import SessionLocal, engine
+from .database import SessionLocal, engine, get_db
 
 from .utils.jwt import jwt_claims,jwt_encode
 
@@ -20,20 +20,10 @@ app = FastAPI()
 # memo: 認証済みのユーザーID取得用に認証ミドルウェアを追加
 app.add_middleware(AuthenticationMiddleware, backend=AuthenticationBackend())
 
+db_session = Depends(get_db)
+
 public_router = APIRouter()
 authentication_router = APIRouter(dependencies=[Depends(verify_active_user)])
-
-
-# Dependency
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-db_session = Depends(get_db)
 
 
 # memo: ヘルスチェックようなので、認証は不要なためpublicルーターに追加

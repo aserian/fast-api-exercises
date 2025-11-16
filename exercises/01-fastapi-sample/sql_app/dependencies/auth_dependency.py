@@ -3,23 +3,13 @@ from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import APIKeyHeader
 
 from sqlalchemy.orm import Session
-from ..database import SessionLocal
+from ..database import get_db
 from .. import crud, schemas
 from ..utils.auth import AuthenticatedUser, UnauthenticatedUser
 
 from ..schemas import User
 from .. import models
 
-
-# Dependency
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-db_session = Depends(get_db)
 
 api_key_header = APIKeyHeader(name="X-API-TOKEN", auto_error=True)
 
