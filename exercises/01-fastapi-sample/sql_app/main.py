@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import Depends, FastAPI, APIRouter, HTTPException
+from fastapi import Depends, FastAPI, APIRouter, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from . import crud, models, schemas
@@ -79,6 +79,11 @@ def create_item_for_user(
 @authentication_router.get("/items/", response_model=List[schemas.Item])
 def read_items(skip: int = 0, limit: int = 100, db: Session = db_session):
     items = crud.get_items(db, skip=skip, limit=limit)
+    return items
+
+@authentication_router.get("/me/items/", response_model=List[schemas.Item])
+def read_items_for_authenticated_user(request: Request, skip: int = 0, limit: int = 100, db: Session = db_session):
+    items = crud.get_user_items(db, user_id=request.user.id, skip=skip, limit=limit)
     return items
 
 app.include_router(public_router)
