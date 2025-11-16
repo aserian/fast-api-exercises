@@ -30,6 +30,7 @@ def test_auth_endpoints_missing_token(test_db, client):
     endpoints = [
         {"method": "get", "path": "/users/"},
         {"method": "get", "path": "/users/1"},
+        {"method": "delete", "path": "/users/1"},
         {"method": "post", "path": "/users/1/items/", "json": {"title": "test", "description": "test"}},
         {"method": "get", "path": "/items/"},
         {"method": "get", "path": "/me/items/"}
@@ -57,6 +58,7 @@ def test_auth_endpoints_without_token(test_db, client):
     endpoints = [
         {"method": "get", "path": "/users/"},
         {"method": "get", "path": "/users/1"},
+        {"method": "delete", "path": "/users/1"},
         {"method": "post", "path": "/users/1/items/", "json": {"title": "test", "description": "test"}},
         {"method": "get", "path": "/items/"},
         {"method": "get", "path": "/me/items/"}
@@ -85,6 +87,7 @@ def test_auth_endpoints_with_valid_token(test_db, client):
     endpoints = [
         {"method": "get", "path": "/users/"},
         {"method": "get", "path": "/users/1"},
+        {"method": "delete", "path": "/users/1"},
         {"method": "post", "path": "/users/1/items/", "json": {"title": "test", "description": "test"}},
         {"method": "get", "path": "/items/"},
         {"method": "get", "path": "/me/items/"}
