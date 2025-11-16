@@ -191,6 +191,7 @@ def test_no_auth_endpoints_with_valid_token(test_db, client):
             response = client_method(endpoint, headers=headers)
         assert response.status_code == 200
 
+
 # 認証されたユーザーのアイテム取得APIのテスト
 def test_read_items_for_authenticated_user(test_db, client):
     app.dependency_overrides.pop(verify_active_user, None)

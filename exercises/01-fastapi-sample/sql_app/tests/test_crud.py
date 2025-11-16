@@ -16,6 +16,7 @@ def test_get_active_user_success(test_db):
     assert user.email == 'active@example.com'
     assert user.is_active is True
 
+
 # アクティブでないユーザーを取得しようとした場合のテスト
 def test_get_active_user_inactive_user(test_db):
     user_id = 1
@@ -28,11 +29,13 @@ def test_get_active_user_inactive_user(test_db):
     user = crud.get_active_user(test_db, user_id=user_id)
     assert user is None
 
+
 # 存在しないユーザーを取得しようとした場合のテスト
 def test_get_active_user_nonexistent(test_db):
     nonexistent_user_id = 999
     user = crud.get_active_user(test_db, user_id=nonexistent_user_id)
     assert user is None
+
 
 # ユーザーのアイテム取得のテスト
 def test_get_user_items_success(test_db):
@@ -56,6 +59,7 @@ def test_get_user_items_success(test_db):
     assert items[2].title == 'Item 3'
     assert all(item.owner_id == user_id for item in items)
 
+
 # ユーザーのアイテム取得でskipとlimitを使用するテスト
 def test_get_user_items_with_skip_limit(test_db):
     user_id = 1
@@ -78,6 +82,7 @@ def test_get_user_items_with_skip_limit(test_db):
     assert items[0].title == 'Item 2'
     assert items[1].title == 'Item 3'
 
+
 # ユーザーのアイテム取得でアイテムが存在しない場合のテスト
 def test_get_user_items_no_items(test_db):
     user_id = 1
@@ -90,6 +95,7 @@ def test_get_user_items_no_items(test_db):
     items = crud.get_user_items(test_db, user_id=user_id)
     assert len(items) == 0
     assert items == []
+
 
 # ユーザーのアイテム取得で他のユーザーのアイテムが混入しないことを確認するテスト
 def test_get_user_items_different_owners(test_db):
