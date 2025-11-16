@@ -69,6 +69,22 @@ def read_user(user_id: int, db: Session = db_session):
     return db_user
 
 
+@authentication_router.delete("/users/{user_id}", response_model=schemas.UserDeactivateResponse)
+def deactivate_user(user_id: int, db: Session = db_session):
+    db_user = crud.get_active_user(db, user_id=user_id)
+    if db_user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # activeなユーザーが最低1人は必要なので、指定されたユーザー以外で最小IDのactiveユーザーを取得してチェック
+    min_user = crud.get_active_user_with_min_id_excluding(db, exclude_user_id=user_id)
+    if not min_user:
+        raise HTTPException(status_code=400, detail="Cannot deactivate the only active user")
+
+    if not crud.deactivate_user(db, user_id=user_id, transfer_user_id=min_user.id):
+        raise HTTPException(status_code=500, detail="Failed to deactivate user")
+    return schemas.UserDeactivateResponse(detail="User deactivated successfully")
+
+
 @authentication_router.post("/users/{user_id}/items/", response_model=schemas.Item)
 def create_item_for_user(
     user_id: int, item: schemas.ItemCreate, db: Session = db_session
@@ -86,6 +102,7 @@ def read_items(skip: int = 0, limit: int = 100, db: Session = db_session):
 def read_items_for_authenticated_user(request: Request, skip: int = 0, limit: int = 100, db: Session = db_session):
     items = crud.get_user_items(db, user_id=request.user.id, skip=skip, limit=limit)
     return items
+
 
 app.include_router(public_router)
 app.include_router(authentication_router)

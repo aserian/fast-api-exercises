@@ -40,3 +40,6 @@ class User(UserBase):
 class UserCreateResponse(BaseModel):
     user: User
     x_api_token: str
+
+class UserDeactivateResponse(BaseModel):
+    detail: str
